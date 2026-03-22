@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="我的规划">
+<title>我的规划</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --bg2: #f5f5f3; --bg3: #efefec;
+  --text: #1a1a1a; --text2: #666; --text3: #aaa;
+  --border: rgba(0,0,0,0.1); --border2: rgba(0,0,0,0.18);
+  --green: #1D9E75; --green-dark: #0F6E56; --red: #E24B4A;
+  --radius: 10px; --radius-lg: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e; --bg2: #2c2c2e; --bg3: #3a3a3c;
+    --text: #f2f2f7; --text2: #ababab; --text3: #666;
+    --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+  }
+}
+body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; padding-bottom: 40px; }
+.container { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+.topbar { background: var(--bg); border-bottom: 0.5px solid var(--border); padding: 14px 0 12px; position: sticky; top: 0; z-index: 100; }
+.topbar-inner { display: flex; justify-content: space-between; align-items: center; }
+.topbar h1 { font-size: 20px; font-weight: 600; color: var(--text); }
+.stats { display: flex; gap: 8px; }
+.stat { background: var(--bg2); border-radius: 20px; padding: 4px 11px; font-size: 12px; color: var(--text2); }
+.stat b { font-weight: 600; color: var(--text); }
+.setting-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 20px; line-height: 1; padding: 2px 4px; }
+.setting-btn:hover { color: var(--text2); }
+
+.key-tip { background: #FFF8EC; border: 0.5px solid #FAC775; border-radius: var(--radius); padding: 10px 13px; margin-top: 12px; font-size: 13px; color: #854F0B; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+@media (prefers-color-scheme: dark) { .key-tip { background: #2a1f0a; border-color: #6b3e00; color: #FAC775; } }
+.key-tip a { color: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+
+.ai-card { background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border); padding: 14px; margin: 14px 0 10px; }
+.ai-card-head { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
+.ai-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+.ai-card-head span { font-size: 13px; color: var(--text2); }
+.ai-textarea { width: 100%; border: none; outline: none; resize: none; font-size: 15px; font-family: inherit; color: var(--text); background: transparent; line-height: 1.65; min-height: 64px; }
+.ai-textarea::placeholder { color: var(--text3); }
+.ai-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 0.5px solid var(--border); }
+.ai-hint { font-size: 12px; color: var(--text3); }
+.ai-send { height: 32px; padding: 0 15px; border-radius: 20px; border: none; background: var(--green); color: white; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: background 0.15s; }
+.ai-send:hover { background: var(--green-dark); }
+.ai-send:disabled { opacity: 0.5; cursor: not-allowed; }
+.spinner { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.error-msg { font-size: 13px; color: var(--red); margin-top: 8px; }
+
+.preview-card { background: var(--bg2); border-radius: var(--radius-lg); border: 0.5px solid var(--border); padding: 13px 14px; margin-bottom: 10px; }
+.preview-title { font-size: 13px; color: var(--text2); margin-bottom: 9px; }
+.preview-items { display: flex; flex-direction: column; gap: 6px; }
+.preview-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg); border-radius: var(--radius); border: 0.5px solid var(--border); font-size: 13px; }
+.preview-item .p-name { flex: 1; color: var(--text); }
+.preview-item .p-del { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px; padding: 0 2px; }
+.preview-item .p-del:hover { color: var(--red); }
+.preview-actions { display: flex; gap: 8px; margin-top: 10px; }
+.btn-confirm { height: 34px; padding: 0 18px; border-radius: 20px; border: none; background: var(--green); color: white; font-size: 13px; font-weight: 500; cursor: pointer; }
+.btn-confirm:hover { background: var(--green-dark); }
+.btn-cancel-p { height: 34px; padding: 0 14px; border-radius: 20px; border: 0.5px solid var(--border2); background: none; color: var(--text2); font-size: 13px; cursor: pointer; }
+
+.manual-add { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.manual-add input[type=text] { flex: 1; min-width: 140px; height: 36px; border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 0 11px; font-size: 14px; color: var(--text); background: var(--bg); outline: none; font-family: inherit; }
+.manual-add input[type=text]:focus { border-color: var(--green); }
+.manual-add select, .manual-add input[type=date] { height: 36px; border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 0 8px; font-size: 13px; color: var(--text); background: var(--bg); outline: none; font-family: inherit; cursor: pointer; }
+.manual-add select { width: 82px; }
+.manual-add input[type=date] { width: 128px; }
+.btn-add-manual { height: 36px; padding: 0 14px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); font-size: 13px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.btn-add-manual:hover { background: var(--bg2); }
+
+.tabs { display: flex; gap: 4px; overflow-x: auto; padding: 2px 0 10px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { padding: 6px 14px; white-space: nowrap; font-size: 13px; border-radius: 20px; cursor: pointer; color: var(--text2); border: 0.5px solid transparent; background: none; transition: all 0.15s; flex-shrink: 0; }
+.tab.active { background: var(--bg); color: var(--text); font-weight: 500; border-color: var(--border); }
+
+.task-list { display: flex; flex-direction: column; gap: 6px; }
+.task-item { display: flex; align-items: center; gap: 10px; padding: 11px 13px; background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); }
+.task-item.done { opacity: 0.45; }
+.task-item.done .task-name { text-decoration: line-through; color: var(--text2); }
+.task-item.overdue { border-left: 2.5px solid var(--red); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; }
+.check-btn { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border2); background: none; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.check-btn.checked { background: var(--green); border-color: var(--green); }
+.check-btn.checked::after { content: ''; display: block; width: 5px; height: 9px; border: 2px solid white; border-top: none; border-left: none; transform: rotate(45deg) translateY(-1px); }
+.task-name { flex: 1; font-size: 14px; color: var(--text); line-height: 1.4; }
+.tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; flex-shrink: 0; }
+.tag-work { background: #E6F1FB; color: #185FA5; }
+.tag-life { background: #EAF3DE; color: #3B6D11; }
+.tag-learn { background: #EEEDFE; color: #534AB7; }
+.tag-health { background: #E1F5EE; color: #0F6E56; }
+.tag-other { background: var(--bg2); color: var(--text2); }
+.date-label { font-size: 12px; color: var(--text3); flex-shrink: 0; }
+.date-label.overdue { color: var(--red); font-weight: 500; }
+.del-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 17px; line-height: 1; padding: 0 2px; flex-shrink: 0; opacity: 0; }
+.task-item:hover .del-btn { opacity: 1; }
+.del-btn:hover { color: var(--red); }
+.section-label { font-size: 12px; color: var(--text3); margin: 12px 0 5px; font-weight: 500; }
+.empty { text-align: center; padding: 3rem 1rem; color: var(--text3); font-size: 14px; }
+
+/* 设置弹窗 */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.modal { background: var(--bg); border-radius: var(--radius-lg); padding: 22px; width: 100%; max-width: 440px; max-height: 88vh; overflow-y: auto; }
+.modal h3 { font-size: 17px; font-weight: 600; margin-bottom: 18px; }
+.section-title { font-size: 11px; color: var(--text3); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+.provider-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 20px; }
+.provider-item { display: flex; align-items: center; gap: 11px; padding: 11px 13px; border: 0.5px solid var(--border); border-radius: var(--radius); cursor: pointer; background: var(--bg2); transition: all 0.15s; }
+.provider-item.selected { border-color: var(--green); background: var(--bg); }
+.radio { width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid var(--border2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.provider-item.selected .radio { border-color: var(--green); background: var(--green); }
+.provider-item.selected .radio::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: white; display: block; }
+.p-logo { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.p-info { flex: 1; }
+.p-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.p-desc { font-size: 12px; color: var(--text3); margin-top: 1px; }
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; flex-shrink: 0; }
+.b-cn { background: #E6F1FB; color: #185FA5; }
+.b-free { background: #EAF3DE; color: #3B6D11; }
+.b-best { background: #EEEDFE; color: #534AB7; }
+
+.field-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.field-group label { font-size: 13px; color: var(--text2); }
+.field-group input { height: 40px; border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 0 12px; font-size: 13px; color: var(--text); background: var(--bg2); outline: none; font-family: monospace; width: 100%; }
+.field-group input:focus { border-color: var(--green); background: var(--bg); }
+.field-link { font-size: 12px; color: var(--green); text-decoration: none; }
+.field-status { font-size: 12px; }
+.field-status.set { color: var(--green); }
+.field-status.unset { color: var(--text3); }
+.modal-btns { display: flex; gap: 8px; margin-top: 6px; }
+.btn-save { flex: 1; height: 40px; background: var(--green); color: white; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; }
+.btn-save:hover { background: var(--green-dark); }
+.btn-close-m { height: 40px; padding: 0 18px; background: var(--bg2); color: var(--text2); border: 0.5px solid var(--border); border-radius: var(--radius); font-size: 14px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="container">
+    <div class="topbar-inner">
+      <h1>我的规划</h1>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="stats">
+          <div class="stat">今日 <b id="c-today">0</b></div>
+          <div class="stat">待完成 <b id="c-pending">0</b></div>
+          <div class="stat">已完成 <b id="c-done">0</b></div>
+        </div>
+        <button class="setting-btn" onclick="openSettings()">⚙</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="key-tip" id="key-tip" style="display:none">
+    ⚠️ 还没配置 AI，随手记功能需要先设置一下。<a onclick="openSettings()">点击设置</a>
+  </div>
+
+  <div class="ai-card">
+    <div class="ai-card-head">
+      <div class="ai-dot"></div>
+      <span id="ai-label">随手记 · AI 自动整理成任务</span>
+    </div>
+    <textarea class="ai-textarea" id="ai-input" placeholder="随便说，比如：下周三交报告，明天去健身，这周读完那本书，周末陪家人吃饭……"></textarea>
+    <div class="ai-foot">
+      <span class="ai-hint">Ctrl / Cmd + Enter 发送</span>
+      <button class="ai-send" id="send-btn" onclick="handleSend()">
+        <span id="send-label">AI 解析</span>
+      </button>
+    </div>
+    <div id="error-msg" class="error-msg" style="display:none"></div>
+  </div>
+
+  <div class="preview-card" id="preview-card" style="display:none">
+    <div class="preview-title">AI 解析结果，确认后加入列表：</div>
+    <div class="preview-items" id="preview-items"></div>
+    <div class="preview-actions">
+      <button class="btn-confirm" onclick="confirmAll()">全部加入 ✓</button>
+      <button class="btn-cancel-p" onclick="cancelPreview()">取消</button>
+    </div>
+  </div>
+
+  <div class="manual-add">
+    <input type="text" id="m-name" placeholder="手动添加任务..." />
+    <select id="m-tag">
+      <option value="work">工作</option>
+      <option value="life">生活</option>
+      <option value="learn">学习</option>
+      <option value="health">健康</option>
+      <option value="other">其他</option>
+    </select>
+    <input type="date" id="m-date" />
+    <button class="btn-add-manual" onclick="addManual()">+ 添加</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('all',this)">全部</button>
+    <button class="tab" onclick="switchTab('today',this)">今日</button>
+    <button class="tab" onclick="switchTab('pending',this)">未完成</button>
+    <button class="tab" onclick="switchTab('done',this)">已完成</button>
+    <button class="tab" onclick="switchTab('overdue',this)">已逾期</button>
+  </div>
+  <div class="task-list" id="task-list"></div>
+</div>
+
+<!-- 设置弹窗 -->
+<div class="modal-bg" id="modal-bg" style="display:none" onclick="bgClick(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>⚙ AI 设置</h3>
+    <div class="section-title">选择 AI 提供商</div>
+    <div class="provider-list">
+      <div class="provider-item" data-pid="doubao" onclick="selectP('doubao')">
+        <div class="radio"></div>
+        <div class="p-logo" style="background:#fff3e0;">🫘</div>
+        <div class="p-info"><div class="p-name">豆包（火山引擎）</div><div class="p-desc">字节跳动 · 国内访问最稳定</div></div>
+        <span class="badge b-cn">国内</span>
+      </div>
+      <div class="provider-item" data-pid="qwen" onclick="selectP('qwen')">
+        <div class="radio"></div>
+        <div class="p-logo" style="background:#e8f5e9;">🌐</div>
+        <div class="p-info"><div class="p-name">通义千问（阿里云）</div><div class="p-desc">阿里云 · 免费额度多</div></div>
+        <span class="badge b-free">免费额度</span>
+      </div>
+      <div class="provider-item" data-pid="anthropic" onclick="selectP('anthropic')">
+        <div class="radio"></div>
+        <div class="p-logo" style="background:#ede7f6;">✦</div>
+        <div class="p-info"><div class="p-name">Claude（Anthropic）</div><div class="p-desc">解析质量最好</div></div>
+        <span class="badge b-best">最准确</span>
+      </div>
+      <div class="provider-item" data-pid="openai" onclick="selectP('openai')">
+        <div class="radio"></div>
+        <div class="p-logo" style="background:#f5f5f5;">◆</div>
+        <div class="p-info"><div class="p-name">ChatGPT（OpenAI）</div><div class="p-desc">需要科学上网</div></div>
+      </div>
+    </div>
+    <div class="section-title">填入 API Key</div>
+    <div id="key-fields"></div>
+    <div class="modal-btns">
+      <button class="btn-save" onclick="saveSettings()">保存</button>
+      <button class="btn-close-m" onclick="closeSettings()">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PROVIDERS = {
+  doubao: {
+    name:'豆包', keyLabel:'ARK API Key', keyPlaceholder:'填入火山引擎 ARK API Key',
+    keyLink:'https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey', keyLinkText:'火山引擎控制台',
+    needModel:true, modelLabel:'模型端点 ID', modelPlaceholder:'例如：ep-20240101-xxxxxx',
+    modelLink:'https://console.volcengine.com/ark/region:ark+cn-beijing/endpoint', modelLinkText:'查看端点列表'
+  },
+  qwen: {
+    name:'通义千问', keyLabel:'DashScope API Key', keyPlaceholder:'填入阿里云 DashScope API Key',
+    keyLink:'https://dashscope.console.aliyun.com/apiKey', keyLinkText:'阿里云控制台', needModel:false
+  },
+  anthropic: {
+    name:'Claude', keyLabel:'Anthropic API Key', keyPlaceholder:'sk-ant-...',
+    keyLink:'https://console.anthropic.com/keys', keyLinkText:'Anthropic 控制台', needModel:false
+  },
+  openai: {
+    name:'ChatGPT', keyLabel:'OpenAI API Key', keyPlaceholder:'sk-...',
+    keyLink:'https://platform.openai.com/api-keys', keyLinkText:'OpenAI 控制台', needModel:false
+  }
+};
+
+const tagLabels = {work:'工作',life:'生活',learn:'学习',health:'健康',other:'其他'};
+let tasks=[], nextId=1, currentTab='all', previewTasks=[];
+let curP = localStorage.getItem('ai_provider')||'doubao';
+
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function offsetDay(n){ const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+function isOverdue(t){ return !t.done && t.date && t.date < todayStr(); }
+function saveTasks(){ localStorage.setItem('my_tasks', JSON.stringify({tasks,nextId})); }
+function loadTasks(){
+  try {
+    const d=JSON.parse(localStorage.getItem('my_tasks')||'null');
+    if(d){tasks=d.tasks||[];nextId=d.nextId||1;}
+    else{
+      tasks=[
+        {id:1,name:'整理本周工作报告',tag:'work',date:todayStr(),done:false},
+        {id:2,name:'每天30分钟有氧运动',tag:'health',date:todayStr(),done:false},
+        {id:3,name:'读完一本书的第三章',tag:'learn',date:offsetDay(3),done:false},
+      ]; nextId=10; saveTasks();
+    }
+  } catch(e){tasks=[];nextId=1;}
+}
+function getKey(pid){ return localStorage.getItem('key_'+pid)||''; }
+function getModel(pid){ return localStorage.getItem('model_'+pid)||''; }
+function hasKey(pid){ return !!getKey(pid); }
+
+function openSettings(){
+  refreshProviderUI();
+  renderKeyFields();
+  document.getElementById('modal-bg').style.display='flex';
+}
+function closeSettings(){ document.getElementById('modal-bg').style.display='none'; }
+function bgClick(e){ if(e.target===document.getElementById('modal-bg')) closeSettings(); }
+
+function selectP(pid){ curP=pid; refreshProviderUI(); renderKeyFields(); }
+function refreshProviderUI(){
+  document.querySelectorAll('.provider-item').forEach(el=>{
+    el.classList.toggle('selected', el.dataset.pid===curP);
+  });
+}
+function renderKeyFields(){
+  const p=PROVIDERS[curP];
+  const k=getKey(curP);
+  let html=`<div class="field-group">
+    <label>${p.keyLabel}</label>
+    <input type="password" id="inp-key" placeholder="${p.keyPlaceholder}" value="${k}" />
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <a href="${p.keyLink}" target="_blank" class="field-link">↗ 前往${p.keyLinkText}获取</a>
+      <span class="field-status ${k?'set':'unset'}">${k?'✓ 已设置':'未设置'}</span>
+    </div>
+  </div>`;
+  if(p.needModel){
+    const m=getModel(curP);
+    html+=`<div class="field-group">
+      <label>${p.modelLabel}</label>
+      <input type="text" id="inp-model" placeholder="${p.modelPlaceholder}" value="${m}" />
+      <a href="${p.modelLink}" target="_blank" class="field-link">↗ ${p.modelLinkText}</a>
+    </div>`;
+  }
+  document.getElementById('key-fields').innerHTML=html;
+}
+function saveSettings(){
+  const k=document.getElementById('inp-key')?.value.trim();
+  const m=document.getElementById('inp-model')?.value.trim();
+  if(k) localStorage.setItem('key_'+curP, k);
+  if(m) localStorage.setItem('model_'+curP, m);
+  localStorage.setItem('ai_provider', curP);
+  closeSettings();
+  updateAILabel();
+  checkTip();
+}
+
+async function callAI(text){
+  const pid=curP, key=getKey(pid);
+  if(!key) throw new Error('请先在设置中填入 API Key');
+  const today=todayStr();
+  const prompt=`今天日期是 ${today}。\n用户输入：\n"${text}"\n\n将其拆解为若干具体可执行任务，返回 JSON 数组，每项字段：\n- name: 任务名（简洁中文，≤20字）\n- tag: work/life/learn/health/other 之一\n- date: 截止日期 YYYY-MM-DD，根据语意推断，无法判断则用今天\n\n只返回 JSON 数组，无其他内容。`;
+  let rawText='';
+
+  if(pid==='anthropic'){
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const d=await r.json(); if(d.error) throw new Error(d.error.message);
+    rawText=(d.content||[]).map(c=>c.text||'').join('');
+  } else if(pid==='openai'){
+    const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'gpt-4o-mini',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const d=await r.json(); if(d.error) throw new Error(d.error.message);
+    rawText=d.choices?.[0]?.message?.content||'';
+  } else if(pid==='qwen'){
+    const r=await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'qwen-turbo',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const d=await r.json(); if(d.error||d.code) throw new Error(d.error?.message||d.message||'API错误');
+    rawText=d.choices?.[0]?.message?.content||'';
+  } else if(pid==='doubao'){
+    const model=getModel('doubao');
+    if(!model) throw new Error('请在设置中填入豆包模型端点 ID');
+    const r=await fetch('https://ark.cn-beijing.volces.com/api/v3/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model,max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const d=await r.json(); if(d.error) throw new Error(d.error.message);
+    rawText=d.choices?.[0]?.message?.content||'';
+  }
+
+  const parsed=JSON.parse(rawText.replace(/```json|```/g,'').trim());
+  if(!Array.isArray(parsed)||!parsed.length) throw new Error('未能解析出任务，请描述得更具体');
+  return parsed;
+}
+
+async function handleSend(){
+  const input=document.getElementById('ai-input');
+  const text=input.value.trim();
+  if(!text){input.focus();return;}
+  if(!hasKey(curP)){openSettings();return;}
+  const btn=document.getElementById('send-btn'), label=document.getElementById('send-label'), errEl=document.getElementById('error-msg');
+  btn.disabled=true; label.innerHTML='<span class="spinner"></span>';
+  errEl.style.display='none'; document.getElementById('preview-card').style.display='none';
+  try {
+    const parsed=await callAI(text);
+    previewTasks=parsed.map((t,i)=>({id:'p_'+i,name:t.name||'未命名',tag:['work','life','learn','health','other'].includes(t.tag)?t.tag:'other',date:/^\d{4}-\d{2}-\d{2}$/.test(t.date)?t.date:todayStr(),done:false}));
+    renderPreview(); document.getElementById('preview-card').style.display='block'; input.value='';
+  } catch(e){
+    errEl.textContent=e.message||'网络错误，请重试'; errEl.style.display='block';
+  } finally { btn.disabled=false; label.textContent='AI 解析'; }
+}
+
+function renderPreview(){
+  document.getElementById('preview-items').innerHTML=previewTasks.map(t=>`
+    <div class="preview-item"><span class="tag tag-${t.tag}">${tagLabels[t.tag]}</span><span class="p-name">${t.name}</span><span class="date-label">${formatDate(t.date)}</span><button class="p-del" onclick="removePreview('${t.id}')">×</button></div>`).join('');
+}
+function removePreview(id){previewTasks=previewTasks.filter(t=>t.id!==id);if(!previewTasks.length){document.getElementById('preview-card').style.display='none';return;}renderPreview();}
+function confirmAll(){previewTasks.forEach(t=>{tasks.unshift({id:nextId++,name:t.name,tag:t.tag,date:t.date,done:false});});previewTasks=[];document.getElementById('preview-card').style.display='none';saveTasks();render();updateStats();}
+function cancelPreview(){previewTasks=[];document.getElementById('preview-card').style.display='none';}
+
+function addManual(){
+  const name=document.getElementById('m-name').value.trim();
+  if(!name){document.getElementById('m-name').focus();return;}
+  tasks.unshift({id:nextId++,name,tag:document.getElementById('m-tag').value,date:document.getElementById('m-date').value||todayStr(),done:false});
+  document.getElementById('m-name').value=''; saveTasks();render();updateStats();
+}
+document.getElementById('ai-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey))handleSend();});
+document.getElementById('m-name').addEventListener('keydown',e=>{if(e.key==='Enter')addManual();});
+
+function toggleDone(id){const t=tasks.find(t=>t.id===id);if(t)t.done=!t.done;saveTasks();render();updateStats();}
+function deleteTask(id){if(!confirm('确认删除？'))return;tasks=tasks.filter(t=>t.id!==id);saveTasks();render();updateStats();}
+function switchTab(tab,el){currentTab=tab;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');render();}
+function filteredTasks(){
+  if(currentTab==='today')return tasks.filter(t=>t.date===todayStr());
+  if(currentTab==='pending')return tasks.filter(t=>!t.done);
+  if(currentTab==='done')return tasks.filter(t=>t.done);
+  if(currentTab==='overdue')return tasks.filter(t=>isOverdue(t));
+  return tasks;
+}
+function formatDate(d){
+  if(!d)return '';const today=todayStr();if(d===today)return '今天';
+  const diff=Math.round((new Date(d)-new Date(today))/86400000);
+  if(diff===1)return '明天';if(diff===-1)return '昨天';
+  if(diff>1&&diff<=7)return diff+'天后';if(diff<0)return Math.abs(diff)+'天前';
+  return d.slice(5).replace('-','/');
+}
+function render(){
+  const list=document.getElementById('task-list'), filtered=filteredTasks();
+  if(!filtered.length){list.innerHTML='<div class="empty">暂无任务 🎉</div>';return;}
+  const pending=filtered.filter(t=>!t.done), done=filtered.filter(t=>t.done);
+  let html='';
+  if(pending.length){if(currentTab==='all'&&done.length)html+='<div class="section-label">待完成</div>';pending.forEach(t=>{html+=taskHTML(t);});}
+  if(done.length){if(currentTab==='all'||currentTab==='done')html+='<div class="section-label">已完成</div>';done.forEach(t=>{html+=taskHTML(t);});}
+  list.innerHTML=html;
+}
+function taskHTML(t){
+  const over=isOverdue(t),dateStr=formatDate(t.date);
+  return `<div class="task-item${t.done?' done':''}${over?' overdue':''}"><button class="check-btn${t.done?' checked':''}" onclick="toggleDone(${t.id})"></button><span class="task-name">${t.name}</span><span class="tag tag-${t.tag}">${tagLabels[t.tag]}</span>${dateStr?`<span class="date-label${over?' overdue':''}">${dateStr}</span>`:''}<button class="del-btn" onclick="deleteTask(${t.id})">×</button></div>`;
+}
+function updateStats(){
+  const today=todayStr();
+  document.getElementById('c-today').textContent=tasks.filter(t=>t.date===today&&!t.done).length;
+  document.getElementById('c-pending').textContent=tasks.filter(t=>!t.done).length;
+  document.getElementById('c-done').textContent=tasks.filter(t=>t.done).length;
+}
+function updateAILabel(){ document.getElementById('ai-label').textContent=`随手记 · ${PROVIDERS[curP].name} AI 自动整理`; }
+function checkTip(){ document.getElementById('key-tip').style.display=hasKey(curP)?'none':'flex'; }
+
+document.getElementById('m-date').value=todayStr();
+loadTasks(); updateAILabel(); checkTip(); render(); updateStats();
+</script>
+</body>
+</html>
